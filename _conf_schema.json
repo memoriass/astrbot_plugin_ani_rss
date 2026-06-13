@@ -1,0 +1,49 @@
+{
+    "base_url": {
+        "title": "ANI-RSS 地址",
+        "type": "string",
+        "description": "ANI-RSS 服务地址，例如 http://127.0.0.1:7789。",
+        "default": "http://127.0.0.1:7789"
+    },
+    "api_prefix": {
+        "title": "API 前缀",
+        "type": "string",
+        "description": "ANI-RSS 接口前缀，通常保持 /api。",
+        "default": "/api"
+    },
+    "api_key": {
+        "title": "API Key",
+        "type": "string",
+        "description": "ANI-RSS 的 API Key。插件通过 api-key 请求头发送。",
+        "default": ""
+    },
+    "timeout_seconds": {
+        "title": "请求超时（秒）",
+        "type": "int",
+        "description": "调用 ANI-RSS 接口的超时时间，单位秒。",
+        "default": 30
+    },
+    "interaction_timeout_seconds": {
+        "title": "交互超时（秒）",
+        "type": "int",
+        "description": "等待用户选择番剧、字幕组或确认 RSS 订阅的时间。",
+        "default": 120
+    },
+    "pending_task_ttl_seconds": {
+        "title": "挂起任务保留（秒）",
+        "type": "int",
+        "description": "候选卡片发出后，任务 ID 可继续使用的时间；过期后会自动清理。",
+        "default": 86400
+    },
+    "render_mode": {
+        "title": "卡片发送模式",
+        "type": "string",
+        "description": "交互卡片发送方式。image 仅发送图片，text 仅发送文本，both 同时发送图片和简短文本。",
+        "default": "image",
+        "options": [
+            "image",
+            "text",
+            "both"
+        ]
+    }
+}
