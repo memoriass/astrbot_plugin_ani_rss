@@ -12,6 +12,7 @@ from .models import CONFIRM_REPLIES, WorkflowRequest
 from .pending import (
     cleanup_task_cards,
     pending_footer,
+    store_pending_rendered_cards,
     store_pending_task,
 )
 from .runtime import build_from_request, interactive_reply, reply
@@ -42,20 +43,21 @@ async def run_add_subscription(
         yield reply(event, request, f"ANI-RSS 添加流程启动失败: {exc}")
         return
 
-    task_id, task = store_pending_task(
+    task_id, _task = store_pending_task(
         plugin,
         event,
         request,
         kind="confirm_add",
         payload={"ani": ani},
     )
-    yield await interactive_reply(
+    result = await interactive_reply(
         plugin,
         event,
         request,
         body + pending_footer(plugin, event, task_id, "确认"),
     )
-    task["rendered_cards"] = list(request.rendered_cards)
+    store_pending_rendered_cards(plugin, task_id, request)
+    yield result
 
 
 async def continue_confirm_add(
@@ -78,6 +80,9 @@ async def continue_confirm_add(
         return
     try:
         message = await plugin.client(require_api_key=True).add_ani(ani)
+        invalidate = getattr(plugin, "invalidate_subscription_cache", None)
+        if callable(invalidate):
+            invalidate()
         ani["_message"] = message
         yield await interactive_reply(plugin, event, request, format_added(ani))
     except Exception as exc:

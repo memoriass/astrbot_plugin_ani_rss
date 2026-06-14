@@ -32,8 +32,20 @@
     "pending_task_ttl_seconds": {
         "title": "挂起任务保留（秒）",
         "type": "int",
-        "description": "候选卡片发出后，任务 ID 可继续使用的时间；过期后会自动清理。",
+        "description": "候选卡片发出后，任务 ID 可继续使用的时间；任务会持久化到 AstrBot 数据目录并按该时间过期清理。",
         "default": 86400
+    },
+    "subscription_cache_ttl_seconds": {
+        "title": "订阅列表缓存（秒）",
+        "type": "int",
+        "description": "查看订阅列表时复用 ANI-RSS listAni 结果的时间。添加订阅成功会自动失效缓存；设为 0 可关闭。",
+        "default": 300
+    },
+    "storage_cleanup_interval_seconds": {
+        "title": "存储清理间隔（秒）",
+        "type": "int",
+        "description": "定时清理过期挂起任务、临时卡片文件和缓存数据的间隔。",
+        "default": 600
     },
     "render_mode": {
         "title": "卡片发送模式",

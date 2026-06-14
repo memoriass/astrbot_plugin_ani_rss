@@ -19,7 +19,11 @@ async def run_list_subscriptions(
     try:
         limit = _get_int(request.params, "limit", default=10)
         enabled_only = _get_bool(request.params, "enabled_only", default=False)
-        anis = await plugin.client(require_api_key=True).list_ani()
+        cached_list = getattr(plugin, "cached_list_ani", None)
+        if callable(cached_list):
+            anis = await cached_list()
+        else:
+            anis = await plugin.client(require_api_key=True).list_ani()
         if enabled_only:
             anis = [ani for ani in anis if bool(ani.get("enable"))]
         yield reply(event, request, format_list(anis, max(limit, 1)))

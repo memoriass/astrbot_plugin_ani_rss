@@ -22,7 +22,11 @@ AstrBot 的 ANI-RSS 订阅助手插件。
 - `timeout_seconds`: API 请求超时。
 - `interaction_timeout_seconds`: 用户选择/确认等待时间。
 - `pending_task_ttl_seconds`: 挂起任务保留时间。
+- `subscription_cache_ttl_seconds`: 订阅列表缓存时间，添加成功后会自动失效。
+- `storage_cleanup_interval_seconds`: 过期挂起任务和缓存的清理间隔。
 - `render_mode`: 卡片发送模式，支持 `image` / `text` / `both`。
+
+运行数据存储在 AstrBot 数据目录：`data/plugin_data/astrbot_plugin_ani_rss/state.sqlite3`。
 
 Ubuntu 22.04/24.04 等较新的 Linux 环境可正常安装图片渲染依赖；渲染器不可用时，`image` / `both` 会自动回退为文本，不影响订阅流程。
 

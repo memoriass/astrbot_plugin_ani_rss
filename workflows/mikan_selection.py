@@ -13,6 +13,7 @@ from .pending import (
     cleanup_task_cards,
     extract_choice_index,
     pending_footer,
+    store_pending_rendered_cards,
     request_from_task,
     store_pending_task,
 )
@@ -44,7 +45,7 @@ async def select_mikan_group(
         return
 
     shown_groups = groups[:8]
-    task_id, task = store_pending_task(
+    task_id, _task = store_pending_task(
         plugin,
         event,
         request,
@@ -56,14 +57,15 @@ async def select_mikan_group(
         },
         task_id=task_id,
     )
-    yield await interactive_reply(
+    result = await interactive_reply(
         plugin,
         event,
         request,
         format_mikan_groups(shown_groups, limit=8)
         + pending_footer(plugin, event, task_id, "选 1"),
     )
-    task["rendered_cards"] = list(request.rendered_cards)
+    store_pending_rendered_cards(plugin, task_id, request)
+    yield result
 
 
 async def continue_select_mikan_anime(
@@ -139,6 +141,9 @@ async def continue_select_mikan_group(
     try:
         ani = await build_from_request(plugin, resumed_request)
         message = await plugin.client(require_api_key=True).add_ani(ani)
+        invalidate = getattr(plugin, "invalidate_subscription_cache", None)
+        if callable(invalidate):
+            invalidate()
         ani["_message"] = message
         yield await interactive_reply(plugin, event, request, format_added(ani))
     except Exception as exc:

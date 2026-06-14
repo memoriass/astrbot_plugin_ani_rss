@@ -7,6 +7,7 @@ from astrbot.api.event import AstrMessageEvent, filter
 from astrbot.api.star import Context, Star, register
 from astrbot.core.star.filter.command import GreedyStr
 
+from .plugin.cache_store import PluginCacheMixin
 from .plugin.pending_store import PendingTaskStoreMixin
 from .plugin.settings import PluginSettingsMixin
 from .plugin.subscription_builder import SubscriptionBuilderMixin
@@ -35,19 +36,28 @@ from .workflows import (
     "astrbot_plugin_ani_rss",
     "memoriass",
     "ANI-RSS 订阅管理插件，支持 Agent 通过 workflow 搜索并交互式添加订阅。",
-    "1.0.3",
+    "1.0.4",
     "https://github.com/memoriass/astrbot_plugin_ani_rss",
 )
 class AniRssPlugin(
     PluginSettingsMixin,
     PendingTaskStoreMixin,
+    PluginCacheMixin,
     SubscriptionBuilderMixin,
     Star,
 ):
     def __init__(self, context: Context, config: AstrBotConfig | None = None) -> None:
         super().__init__(context)
         self.config = config or {}
-        self._pending_tasks: dict[str, dict[str, Any]] = {}
+
+    async def initialize(self) -> None:
+        self.runtime_store()
+        self.cleanup_runtime_store()
+        self.start_runtime_cleanup()
+
+    async def terminate(self) -> None:
+        self.cleanup_runtime_store()
+        await self.stop_runtime_cleanup()
 
     @filter.llm_tool(name="ani_rss")
     async def ani_rss(

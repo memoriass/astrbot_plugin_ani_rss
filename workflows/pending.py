@@ -159,6 +159,22 @@ def store_pending_task(
     return task_id, stored
 
 
+def store_pending_rendered_cards(
+    plugin: Any,
+    task_id: str,
+    request: WorkflowRequest,
+) -> None:
+    paths = list(request.rendered_cards)
+    updater = getattr(plugin, "update_pending_task", None)
+    if callable(updater):
+        updater(task_id, {"rendered_cards": paths})
+        return
+
+    task = plugin.get_pending_task(task_id)
+    if task is not None:
+        task["rendered_cards"] = paths
+
+
 def cleanup_task_cards(task: dict[str, Any] | None) -> None:
     if task:
         cleanup_rendered_cards(task.get("rendered_cards") or [])

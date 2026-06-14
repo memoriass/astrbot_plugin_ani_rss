@@ -44,6 +44,18 @@ class PluginSettingsMixin:
         except (TypeError, ValueError):
             return 86400
 
+    def subscription_cache_ttl_seconds(self) -> int:
+        try:
+            return max(int(self._cfg("subscription_cache_ttl_seconds", 300)), 0)
+        except (TypeError, ValueError):
+            return 300
+
+    def storage_cleanup_interval_seconds(self) -> int:
+        try:
+            return max(int(self._cfg("storage_cleanup_interval_seconds", 600)), 60)
+        except (TypeError, ValueError):
+            return 600
+
     def command_prefixes(self, event: Any | None = None) -> list[str]:
         umo = str(getattr(event, "unified_msg_origin", "") or "") if event else ""
         config: Any = None

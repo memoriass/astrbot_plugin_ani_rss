@@ -14,7 +14,7 @@ from .mikan import (
     mikan_candidates,
 )
 from .models import WorkflowRequest
-from .pending import pending_footer, store_pending_task
+from .pending import pending_footer, store_pending_rendered_cards, store_pending_task
 from .runtime import interactive_reply, reply
 from .utils import _first_text, _get_bool, _get_float, _get_int
 
@@ -87,20 +87,21 @@ async def run_recommend_mikan_subscription(
             yield reply(event, request, body)
             return
 
-        task_id, task = store_pending_task(
+        task_id, _task = store_pending_task(
             plugin,
             event,
             request,
             kind="select_mikan_anime",
             payload={"candidates": shown},
         )
-        yield await interactive_reply(
+        result = await interactive_reply(
             plugin,
             event,
             request,
             body + pending_footer(plugin, event, task_id, "选 1"),
         )
-        task["rendered_cards"] = list(request.rendered_cards)
+        store_pending_rendered_cards(plugin, task_id, request)
+        yield result
     except AniRssError as exc:
         yield reply(event, request, f"Mikan 推荐 workflow 失败: {exc}")
     except Exception as exc:
