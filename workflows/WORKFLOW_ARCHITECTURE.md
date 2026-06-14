@@ -31,7 +31,7 @@
 - `search_mikan`: 搜索 Mikan 或查看字幕组 RSS。
 - `add_subscription`: RSS 直连预览，确认后添加。
 - `continue_pending`: 继续挂起任务。
-- `list_subscriptions`: 查看订阅。
+- `list_subscriptions`: 查看 ANI-RSS 已启用订阅。
 - `refresh_subscription`: 刷新单个订阅。
 - `refresh_all`: 刷新全部订阅。
 

@@ -86,8 +86,7 @@ def workflow_from_natural_language(text: str) -> WorkflowRequest | None:
             )
 
     if _natural_list_intent(cleaned):
-        if re.search(r"启用|enable|enabled", cleaned, re.IGNORECASE):
-            params["enabled_only"] = True
+        params["enabled_only"] = True
         return WorkflowRequest("list_subscriptions", params=params, source="natural")
 
     return None
@@ -128,7 +127,12 @@ def _natural_refresh_intent(text: str) -> bool:
 
 def _natural_list_intent(text: str) -> bool:
     return bool(
-        re.search(r"(?:查看|列出|看看|显示).{0,40}(?:ani-rss|anirss|订阅列表|订阅)", text, re.IGNORECASE),
+        re.search(
+            r"(?:查看|列出|看看|显示|预览).{0,40}"
+            r"(?:ani-rss|anirss|订阅列表|订阅|追番|已启用|运行|正在订阅)",
+            text,
+            re.IGNORECASE,
+        ),
     )
 
 

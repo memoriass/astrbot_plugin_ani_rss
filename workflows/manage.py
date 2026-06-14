@@ -8,7 +8,7 @@ from astrbot.api.event import AstrMessageEvent
 from .formatting import format_list
 from .models import WorkflowRequest
 from .runtime import reply
-from .utils import _first_text, _get_bool, _get_int
+from .utils import _first_text, _get_int
 
 
 async def run_list_subscriptions(
@@ -18,14 +18,12 @@ async def run_list_subscriptions(
 ) -> AsyncIterator[Any]:
     try:
         limit = _get_int(request.params, "limit", default=10)
-        enabled_only = _get_bool(request.params, "enabled_only", default=False)
         cached_list = getattr(plugin, "cached_list_ani", None)
         if callable(cached_list):
             anis = await cached_list()
         else:
             anis = await plugin.client(require_api_key=True).list_ani()
-        if enabled_only:
-            anis = [ani for ani in anis if bool(ani.get("enable"))]
+        anis = [ani for ani in anis if bool(ani.get("enable"))]
         yield reply(event, request, format_list(anis, max(limit, 1)))
     except Exception as exc:
         yield reply(event, request, f"List subscriptions failed: {exc}")

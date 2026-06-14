@@ -36,7 +36,7 @@ def help_text(plugin: Any, event: AstrMessageEvent) -> str:
         f"{cmd('anirss add_mikan_subscription <番名>')}    - 搜索 Mikan，选择番剧/字幕组后添加\n"
         f"{cmd('anirss recommend_mikan_subscription [query|year season]')} - 推荐筛选后添加\n"
         f"{cmd('anirss search_mikan <番名或Mikan链接>')}   - 搜索 Mikan 或查看字幕组 RSS\n"
-        f"{cmd('anirss list_subscriptions [limit]')}       - 查看订阅列表\n"
+        f"{cmd('anirss list_subscriptions [limit]')}       - 查看已启用订阅\n"
         f"{cmd('anirss refresh_subscription <id>')}        - 刷新单个订阅\n"
         f"{cmd('anirss refresh_all')}                      - 刷新全部订阅\n"
         f"{cmd('ani<任务ID前后几位> <序号|确认|取消>')}        - 继续挂起的 ANI-RSS 任务\n"

@@ -10,7 +10,7 @@ NATURAL_LANGUAGE_INTENT_RE = (
     r"|(?:添加|下载|订阅|追番|加入).{1,80}(?:到|进|至|加入)\s*(?:ani|ani-rss|anirss|nas|rss|订阅)"
     r"|(?:把|将).{1,80}(?:添加|下载|订阅|追番|加入)(?:到|进|至|加入)?\s*(?:ani|ani-rss|anirss|nas|rss|订阅)?"
     r"|(?:搜索|查找|查一下|找一下|搜一下).{0,80}(?:mikan|蜜柑|字幕组|番剧|动画|rss|有没有字幕组)"
-    r"|(?:查看|列出|看看|显示).{0,50}(?:ani-rss|anirss|订阅列表|订阅)"
+    r"|(?:查看|列出|看看|显示|预览).{0,50}(?:ani-rss|anirss|订阅列表|订阅|追番|已启用|运行|正在订阅)"
     r"|(?:刷新|更新).{0,50}(?:ani-rss|anirss|全部订阅|所有订阅|订阅)"
     r"|(?:检查|测试).{0,50}(?:ani-rss|anirss|连接|状态)"
     r")"
@@ -63,8 +63,8 @@ COMPILED_WORKFLOWS: dict[str, CompiledWorkflow] = {
     ),
     "list_subscriptions": CompiledWorkflow(
         workflow="list_subscriptions",
-        title="订阅列表",
-        purpose="列出当前 ANI-RSS 订阅，可选择只看启用项。",
+        title="已启用订阅",
+        purpose="列出当前 ANI-RSS 已启用订阅，用于预览正在追番的订阅。",
     ),
     "refresh_subscription": CompiledWorkflow(
         workflow="refresh_subscription",

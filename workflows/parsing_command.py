@@ -73,10 +73,9 @@ def workflow_from_cli(sub: str, args: str = "") -> WorkflowRequest | None:
     elif workflow == "preview_subscription":
         target = text
     elif workflow == "list_subscriptions":
-        params["limit"] = parts[0] if parts else "10"
-        params["enabled_only"] = bool(
-            {part.lower() for part in parts[1:]} & {"enabled", "enable", "启用"}
-        )
+        numeric_parts = [part for part in parts if part.isdigit()]
+        params["limit"] = numeric_parts[0] if numeric_parts else "10"
+        params["enabled_only"] = True
     elif workflow == "refresh_subscription":
         target = text
     elif workflow == "continue_pending":

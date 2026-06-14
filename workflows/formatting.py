@@ -114,8 +114,8 @@ def format_preview(
 def format_list(anis: list[dict[str, Any]], limit: int) -> str:
     total = len(anis)
     if total == 0:
-        return "No ANI-RSS subscriptions found."
-    lines = [f"ANI-RSS subscriptions: {total}"]
+        return "当前没有已启用的 ANI-RSS 订阅。"
+    lines = [f"ANI-RSS 已启用订阅: {total}"]
     for index, ani in enumerate(anis[:limit], start=1):
         lines.append(f"{index}. {format_ani_summary(ani)}")
     if total > limit:
