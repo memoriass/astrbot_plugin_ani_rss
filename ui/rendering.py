@@ -18,6 +18,10 @@ from .mikan_cards import (
     is_mikan_card_text,
     mikan_render_width,
 )
+from .subscription_cards import (
+    build_subscription_list_card_html,
+    is_subscription_list_text,
+)
 
 _PYLITEHTML_UNAVAILABLE_LOGGED = False
 
@@ -127,6 +131,14 @@ def build_card_html(
     )
     if mikan_card:
         return mikan_card
+    subscription_card = build_subscription_list_card_html(
+        heading,
+        subtitle,
+        body_lines,
+        cover_proxy=cover_proxy,
+    )
+    if subscription_card:
+        return subscription_card
 
     return build_generic_card_html(lines, heading, subtitle, body_lines)
 
@@ -134,6 +146,8 @@ def build_card_html(
 def _render_width(text: str, *, title: str = "", requested_width: int = 860) -> int:
     if is_mikan_card_text(text, title=title):
         return mikan_render_width(text, title=title, requested_width=requested_width)
+    if is_subscription_list_text(text, title=title):
+        return 860
     if _is_mikan_group_text(text, title=title):
         return 500
     if is_success_card_text(text, title=title):
@@ -144,6 +158,7 @@ def _render_width(text: str, *, title: str = "", requested_width: int = 860) -> 
 def _uses_compact_scale(text: str, *, title: str = "") -> bool:
     return (
         is_mikan_card_text(text, title=title)
+        or is_subscription_list_text(text, title=title)
         or _is_mikan_group_text(text, title=title)
         or is_success_card_text(text, title=title)
     )

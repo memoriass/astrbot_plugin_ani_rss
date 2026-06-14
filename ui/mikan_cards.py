@@ -176,6 +176,7 @@ def build_mikan_card_html(
       width: 78px;
       height: 108px;
       border-radius: 6px;
+      margin-right: 14px;
     }}
     .search-main {{
       min-width: 0;
@@ -259,6 +260,7 @@ def build_mikan_card_html(
       object-fit: cover;
       flex: 0 0 auto;
       background: #e9edf4;
+      margin-right: 8px;
     }}
     .poster-placeholder {{
       width: 54px;
@@ -272,6 +274,7 @@ def build_mikan_card_html(
       display: flex;
       align-items: center;
       justify-content: center;
+      margin-right: 8px;
     }}
     .anime-main {{
       min-width: 0;

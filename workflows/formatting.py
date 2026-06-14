@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 import re
 from typing import Any
 
@@ -115,9 +116,15 @@ def format_list(anis: list[dict[str, Any]], limit: int) -> str:
     total = len(anis)
     if total == 0:
         return "当前没有已启用的 ANI-RSS 订阅。"
-    lines = [f"ANI-RSS 已启用订阅: {total}"]
-    for index, ani in enumerate(anis[:limit], start=1):
-        lines.append(f"{index}. {format_ani_summary(ani)}")
+    shown = anis[:limit]
+    lines = [f"ANI-RSS 已启用订阅: {len(shown)}/{total}"]
+    current_week = ""
+    for index, ani in enumerate(shown, start=1):
+        week = _subscription_week_label(ani)
+        if week != current_week:
+            lines.append(week)
+            current_week = week
+        lines.extend(_format_subscription_list_item(index, ani))
     if total > limit:
         lines.append(f"... {total - limit} more")
     return "\n".join(lines)
@@ -226,9 +233,75 @@ def _candidate_summary(item: dict[str, Any]) -> str:
 def item_name(item: dict[str, Any]) -> str:
     return str(item.get("name") or item.get("title") or "")
 
+def _subscription_week_label(ani: dict[str, Any]) -> str:
+    week = _first_text(ani, "weekLabel", "week_label", "weekday", "week")
+    if week:
+        return week
+    return "未分组"
+
+def _format_subscription_list_item(index: int, ani: dict[str, Any]) -> list[str]:
+    title = ani.get("title") or ani.get("mikanTitle") or "(untitled)"
+    season = ani.get("season")
+    subgroup = ani.get("subgroup") or ""
+    media_type = ani.get("type") or ""
+    ani_id = ani.get("id") or ""
+    score = ani.get("score")
+    url = ani.get("url") or ""
+    cover = _first_text(ani, "image", "coverUrl", "posterUrl", "poster", "cover")
+    updated = _format_subscription_time(
+        _first_text(
+            ani,
+            "lastDownloadTime",
+            "updateTime",
+            "updatedAt",
+            "lastUpdateTime",
+            "lastPubDate",
+            "lastRefreshTime",
+        ),
+    )
+    tags = []
+    if season not in (None, ""):
+        tags.append(f"第 {season} 季")
+    if subgroup:
+        tags.append(str(subgroup))
+    if media_type:
+        tags.append(str(media_type))
+
+    lines = [f"{index}. {title}"]
+    episode = _episode_summary(ani)
+    if episode:
+        lines.append(f"   集数: {episode}")
+    if tags:
+        lines.append(f"   标签: {' / '.join(tags)}")
+    if score not in (None, "", 0, 0.0):
+        lines.append(f"   评分: {_format_score(score)}")
+    if updated:
+        lines.append(f"   更新: {updated}")
+    if ani_id:
+        lines.append(f"   ID: {ani_id}")
+    if url:
+        lines.append(f"   rss: {url}")
+    if cover:
+        lines.append(f"   cover: {cover}")
+    return lines
+
 def _episode_summary(ani: dict[str, Any]) -> str:
     current = ani.get("currentEpisodeNumber")
     total = ani.get("totalEpisodeNumber")
     if current in (None, "") and total in (None, ""):
         return ""
     return f"{current or 0}/{total or '*'}"
+
+def _format_subscription_time(value: Any) -> str:
+    raw = str(value or "").strip()
+    if not raw:
+        return ""
+    try:
+        timestamp = float(raw)
+    except ValueError:
+        return raw
+    if timestamp > 1_000_000_000_000:
+        timestamp /= 1000
+    if timestamp < 946684800:
+        return ""
+    return datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d %H:%M")
