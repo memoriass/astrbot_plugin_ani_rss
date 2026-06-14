@@ -156,6 +156,18 @@ class AniRssClient:
         )
         return str(result.get("message") or "Subscription added")
 
+    async def delete_ani(self, subscription_ids: list[str], *, delete_files: bool = False) -> str:
+        ids = [str(item).strip() for item in subscription_ids if str(item).strip()]
+        if not ids:
+            raise AniRssError("subscription_ids are required.")
+        result = await self.request(
+            "POST",
+            "/deleteAni",
+            payload=ids,
+            params={"deleteFiles": str(bool(delete_files)).lower()},
+        )
+        return str(result.get("message") or "Subscription deleted")
+
     async def preview_ani(self, ani: dict[str, Any]) -> dict[str, Any]:
         result = await self.request_first(
             [

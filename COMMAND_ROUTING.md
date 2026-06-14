@@ -11,7 +11,8 @@
 
 - 主命令：`anirss`
 - 别名：`ani-rss`、`ani`、`追番`、`番剧订阅`
-- 挂起任务快捷命令：`ani` + 任务 ID 前几位或后几位
+- 挂起任务快捷命令：`ani` + 任务 ID 前几位或后几位。
+- 短任务命令会识别 AstrBot 全局 `wake_prefix`；如果消息尚未被全局唤醒，也会尝试识别 `provider_settings.wake_prefix`，用于 `plana ani68d2 1`。
 
 示例：
 

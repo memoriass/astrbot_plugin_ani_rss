@@ -18,6 +18,7 @@ from .plugin.tooling import (
 from .routing.commands import (
     ANIRSS_COMMAND_NAMES,
     InvalidPendingShortcutFilter,
+    PENDING_SHORTCUT_TEXT_KEY,
     PendingShortcutFilter,
     split_command_tail,
 )
@@ -34,7 +35,7 @@ from .workflows import (
     "astrbot_plugin_ani_rss",
     "memoriass",
     "ANI-RSS 订阅管理插件，支持 Agent 通过 workflow 搜索并交互式添加订阅。",
-    "1.0.1",
+    "1.0.2",
     "https://github.com/memoriass/astrbot_plugin_ani_rss",
 )
 class AniRssPlugin(
@@ -94,7 +95,8 @@ class AniRssPlugin(
 
     @filter.custom_filter(PendingShortcutFilter)
     async def cmd_pending_shortcut(self, event: AstrMessageEvent):
-        request = workflow_from_pending_shortcut(event.get_message_str())
+        text = event.get_extra(PENDING_SHORTCUT_TEXT_KEY, event.get_message_str())
+        request = workflow_from_pending_shortcut(text)
         if request is None:
             return
         async for item in run_ani_rss_workflow(self, event, request):
