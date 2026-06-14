@@ -36,7 +36,7 @@ from .workflows import (
     "astrbot_plugin_ani_rss",
     "memoriass",
     "ANI-RSS 订阅管理插件，支持 Agent 通过 workflow 搜索并交互式添加订阅。",
-    "1.0.6",
+    "1.0.7",
     "https://github.com/memoriass/astrbot_plugin_ani_rss",
 )
 class AniRssPlugin(
