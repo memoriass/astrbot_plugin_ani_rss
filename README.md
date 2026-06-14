@@ -24,6 +24,8 @@ AstrBot 的 ANI-RSS 订阅助手插件。
 - `pending_task_ttl_seconds`: 挂起任务保留时间。
 - `render_mode`: 卡片发送模式，支持 `image` / `text` / `both`。
 
+Ubuntu 22.04/24.04 等较新的 Linux 环境可正常安装图片渲染依赖；渲染器不可用时，`image` / `both` 会自动回退为文本，不影响订阅流程。
+
 ## 使用方式
 
 优先使用自然语言：

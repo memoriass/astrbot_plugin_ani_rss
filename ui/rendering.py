@@ -19,6 +19,8 @@ from .mikan_cards import (
     mikan_render_width,
 )
 
+_PYLITEHTML_UNAVAILABLE_LOGGED = False
+
 
 def render_card_png(
     text: str,
@@ -54,6 +56,9 @@ def render_card_png(
 async def result_for_interaction(plugin: Any, event: Any, text: str, *, title: str = "") -> tuple[Any, str]:
     mode = plugin.render_mode()
     if mode == "text":
+        return event.plain_result(text), ""
+    if not _pylitehtml_available():
+        _log_pylitehtml_unavailable()
         return event.plain_result(text), ""
 
     try:
@@ -165,3 +170,15 @@ def _setup_pylitehtml_fonts() -> None:
     if fonts_conf.exists():
         os.environ["FONTCONFIG_FILE"] = str(fonts_conf)
         os.environ.setdefault("FONTCONFIG_PATH", str(fonts_dir))
+
+
+def _pylitehtml_available() -> bool:
+    return importlib.util.find_spec("pylitehtml") is not None
+
+
+def _log_pylitehtml_unavailable() -> None:
+    global _PYLITEHTML_UNAVAILABLE_LOGGED
+    if _PYLITEHTML_UNAVAILABLE_LOGGED:
+        return
+    logger.info("pylitehtml is not installed; ANI-RSS card rendering falls back to text.")
+    _PYLITEHTML_UNAVAILABLE_LOGGED = True

@@ -38,7 +38,7 @@
     "render_mode": {
         "title": "卡片发送模式",
         "type": "string",
-        "description": "交互卡片发送方式。image 仅发送图片，text 仅发送文本，both 同时发送图片和简短文本。",
+        "description": "交互卡片发送方式。image 仅发送图片，text 仅发送文本，both 同时发送图片和简短文本。渲染器不可用时会自动回退文本。",
         "default": "image",
         "options": [
             "image",
