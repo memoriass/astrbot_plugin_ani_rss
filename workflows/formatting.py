@@ -15,10 +15,33 @@ def format_workflow_list() -> str:
     return "\n".join(lines)
 
 def format_added(ani: dict[str, Any]) -> str:
-    lines = [
-        str(ani.get("_message") or "Subscription added"),
-        format_ani_summary(ani),
-    ]
+    title = ani.get("title") or ani.get("mikanTitle") or "(untitled)"
+    season = ani.get("season")
+    subgroup = ani.get("subgroup") or ""
+    enabled = "已启用" if ani.get("enable") else "未启用"
+    ani_id = ani.get("id") or ""
+    url = ani.get("url") or ""
+    bgm_url = ani.get("bgmUrl") or ""
+    score = ani.get("score")
+    episode = _episode_summary(ani)
+    message = str(ani.get("_message") or "添加订阅成功")
+
+    lines = [f"ANI-RSS 添加订阅成功: {message}", f"标题: {title}", f"状态: {enabled}"]
+    if season not in (None, ""):
+        lines.append(f"季度: 第 {season} 季")
+    if episode:
+        lines.append(f"集数: {episode}")
+    if subgroup:
+        lines.append(f"字幕组: {subgroup}")
+    if score not in (None, "", 0, 0.0):
+        lines.append(f"评分: {_format_score(score)}")
+    if ani_id:
+        lines.append(f"订阅ID: {ani_id}")
+    if bgm_url:
+        lines.append(f"BGM: {bgm_url}")
+    if url:
+        lines.append(f"rss: {url}")
+    lines.append("后续下载、过滤和刷新由 ANI-RSS 处理。")
     return "\n".join(line for line in lines if line)
 
 def format_ani_summary(ani: dict[str, Any]) -> str:

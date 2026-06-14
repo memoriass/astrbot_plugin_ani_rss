@@ -6,6 +6,7 @@ from ..workflows import (
     run_ani_rss_workflow,
     workflow_from_cli,
     workflow_from_natural_language,
+    workflow_from_pending_shortcut,
     workflow_from_tool,
 )
 
@@ -15,5 +16,6 @@ __all__ = [
     "run_ani_rss_workflow",
     "workflow_from_cli",
     "workflow_from_natural_language",
+    "workflow_from_pending_shortcut",
     "workflow_from_tool",
 ]

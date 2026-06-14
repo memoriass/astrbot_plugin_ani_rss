@@ -1,0 +1,98 @@
+from __future__ import annotations
+
+from collections.abc import AsyncIterator
+from typing import Any
+
+from astrbot.api import logger
+from astrbot.api.event import AstrMessageEvent
+
+from ..integrations.ani_rss import AniRssError
+from .formatting import format_added, format_ani_summary, format_preview
+from .models import CONFIRM_REPLIES, WorkflowRequest
+from .pending import (
+    cleanup_task_cards,
+    pending_footer,
+    store_pending_task,
+)
+from .runtime import build_from_request, interactive_reply, reply
+from .utils import normalize_reply
+
+PREVIEW_ITEMS_LIMIT = 8
+
+
+async def run_add_subscription(
+    plugin: Any,
+    event: AstrMessageEvent,
+    request: WorkflowRequest,
+) -> AsyncIterator[Any]:
+    try:
+        ani = await build_from_request(plugin, request)
+        body = "\n".join(
+            [
+                "待确认 ANI-RSS 订阅:",
+                format_ani_summary(ani),
+                "确认后仅提交到 ANI-RSS；下载路径、过滤规则和后续刷新由 ANI-RSS 处理。",
+            ],
+        )
+    except AniRssError as exc:
+        yield reply(event, request, f"ANI-RSS 添加流程启动失败: {exc}")
+        return
+    except Exception as exc:
+        logger.exception("Unexpected ANI-RSS add workflow preparation failure")
+        yield reply(event, request, f"ANI-RSS 添加流程启动失败: {exc}")
+        return
+
+    task_id, task = store_pending_task(
+        plugin,
+        event,
+        request,
+        kind="confirm_add",
+        payload={"ani": ani},
+    )
+    yield await interactive_reply(
+        plugin,
+        event,
+        request,
+        body + pending_footer(plugin, event, task_id, "确认"),
+    )
+    task["rendered_cards"] = list(request.rendered_cards)
+
+
+async def continue_confirm_add(
+    plugin: Any,
+    event: AstrMessageEvent,
+    request: WorkflowRequest,
+    task_id: str,
+    task: dict[str, Any],
+    action: str,
+) -> AsyncIterator[Any]:
+    if normalize_reply(action) not in CONFIRM_REPLIES:
+        yield reply(event, request, f"任务 {task_id} 等待确认。请回复“确认”添加，或回复“取消”放弃。")
+        return
+
+    popped = plugin.pop_pending_task(task_id)
+    cleanup_task_cards(popped)
+    ani = dict(task.get("ani") or {})
+    if not ani:
+        yield reply(event, request, f"任务 {task_id} 缺少订阅内容，无法添加。")
+        return
+    try:
+        message = await plugin.client(require_api_key=True).add_ani(ani)
+        ani["_message"] = message
+        yield await interactive_reply(plugin, event, request, format_added(ani))
+    except Exception as exc:
+        logger.exception("Unexpected ANI-RSS pending add failure")
+        yield reply(event, request, f"添加订阅失败: {exc}")
+
+
+async def run_preview_subscription(
+    plugin: Any,
+    event: AstrMessageEvent,
+    request: WorkflowRequest,
+) -> AsyncIterator[Any]:
+    try:
+        ani = await build_from_request(plugin, request)
+        preview = await plugin.client(require_api_key=True).preview_ani(ani)
+        yield reply(event, request, format_preview(ani, preview, PREVIEW_ITEMS_LIMIT))
+    except Exception as exc:
+        yield reply(event, request, f"Preview failed: {exc}")
