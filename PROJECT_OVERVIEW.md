@@ -2,7 +2,7 @@
 
 AstrBot 的 ANI-RSS 订阅助手插件。插件提供 `ani_rss` Agent 工具，让用户用自然语言搜索 Mikan、选择字幕组，并把 RSS 订阅提交到 ANI-RSS。
 
-当前版本：`1.1.1`
+当前版本：`1.1.2`
 
 ## 能力
 
