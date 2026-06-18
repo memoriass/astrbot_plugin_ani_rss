@@ -6,8 +6,13 @@ from typing import Any
 from astrbot.api import logger
 from astrbot.api.event import AstrMessageEvent
 
+from .duplicates import (
+    find_enabled_duplicate_subscription,
+    format_duplicate_subscription,
+)
 from .formatting import format_added, format_mikan_groups
 from .mikan import _enrich_mikan_candidate, _groups_from_candidate
+from .mikan_fetch import fetch_mikan_groups
 from .models import WorkflowRequest
 from .pending import (
     cleanup_task_cards,
@@ -38,7 +43,7 @@ async def select_mikan_group(
 
     groups = _groups_from_candidate(candidate)
     if not groups:
-        groups = await plugin.client(require_api_key=True).mikan_groups(mikan_url)
+        groups = await fetch_mikan_groups(plugin, mikan_url)
     groups = [group for group in groups if str(group.get("rss") or "").strip()]
     if not groups:
         yield reply(event, request, "该 Mikan 番剧没有找到可用字幕组 RSS。")
@@ -140,6 +145,14 @@ async def continue_select_mikan_group(
         resumed_request.params.setdefault("bgm_url", bgm_url)
     try:
         ani = await build_from_request(plugin, resumed_request)
+        duplicate = await find_enabled_duplicate_subscription(plugin, ani)
+        if duplicate:
+            text = format_duplicate_subscription(duplicate)
+            if request.source == "tool":
+                yield reply(event, request, text)
+            else:
+                yield await interactive_reply(plugin, event, request, text)
+            return
         message = await plugin.client(require_api_key=True).add_ani(ani)
         invalidate = getattr(plugin, "invalidate_subscription_cache", None)
         if callable(invalidate):

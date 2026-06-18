@@ -8,7 +8,7 @@ AstrBot 插件运行时支撑模块。由于 AstrBot loader 以根目录 `main.p
 - `storage_paths.py`: 按 AstrBot 规范解析插件数据目录。
 - `sqlite_store.py`: SQLite 运行时存储，负责挂起任务、缓存和定时清理。
 - `pending_store.py`: 挂起任务创建、短 ID 匹配和任务读取。
-- `cache_store.py`: ANI-RSS 订阅列表短期缓存和失效。
+- `cache_store.py`: ANI-RSS 订阅列表、Mikan 搜索和字幕组列表短期缓存。
 - `subscription_builder.py`: RSS 类型识别、Mikan bgmUrl 补齐、订阅结构构造。
 - `tooling.py`: 工具调用事件提取、自然语言提示修正、帮助文本。
 
@@ -21,4 +21,5 @@ data/plugin_data/astrbot_plugin_ani_rss/state.sqlite3
 ```
 
 `pending_task_ttl_seconds` 控制挂起任务保留时间；`subscription_cache_ttl_seconds`
-控制订阅列表缓存时间；`storage_cleanup_interval_seconds` 控制定时清理间隔。插件重载不会丢失未过期挂起任务。
+控制订阅列表缓存时间；`mikan_search_cache_ttl_seconds` 控制 Mikan 搜索和字幕组缓存时间；
+`storage_cleanup_interval_seconds` 控制定时清理间隔。插件重载不会丢失未过期挂起任务。

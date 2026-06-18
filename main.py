@@ -36,7 +36,7 @@ from .workflows import (
     "astrbot_plugin_ani_rss",
     "memoriass",
     "ANI-RSS 订阅管理插件，支持 Agent 通过 workflow 搜索并交互式添加订阅。",
-    "1.0.7",
+    "1.0.8",
     "https://github.com/memoriass/astrbot_plugin_ani_rss",
 )
 class AniRssPlugin(
@@ -75,6 +75,7 @@ class AniRssPlugin(
         ANI-RSS API 连通性。
 
         常用 workflow：
+        - ai_dispatch：自然语言或不完整参数的前置分流入口。
         - recommend_mikan_subscription：推荐本季或指定条件的 Mikan 候选。
         - add_mikan_subscription：按番名搜索 Mikan，选择番剧和字幕组后添加。
         - search_mikan：只搜索 Mikan 番剧或查看字幕组 RSS。
@@ -89,10 +90,11 @@ class AniRssPlugin(
 
         Args:
             workflow(string): One workflow scenario id, such as
-                add_mikan_subscription, recommend_mikan_subscription,
+                ai_dispatch, add_mikan_subscription, recommend_mikan_subscription,
                 search_mikan, list_subscriptions, refresh_subscription,
                 refresh_all, check_status, preview_subscription, or continue_pending.
-            target(string): Anime title, RSS URL, Mikan URL, subscription id, or task id.
+            target(string): Natural text, anime title, RSS URL, Mikan URL,
+                subscription id, or task id.
             params(object): Optional JSON object. Examples:
                 {"query":"番名"}, {"limit":8,"min_score":7,"preview_only":true},
                 {"subscription_id":"..."}, {"task_id":"ani1a2b3c4d","choice":"1"}.

@@ -7,6 +7,10 @@ from astrbot.api import logger
 from astrbot.api.event import AstrMessageEvent
 
 from ..integrations.ani_rss import AniRssError
+from .duplicates import (
+    find_enabled_duplicate_subscription,
+    format_duplicate_subscription,
+)
 from .formatting import format_added, format_ani_summary, format_preview
 from .models import CONFIRM_REPLIES, WorkflowRequest
 from .pending import (
@@ -28,6 +32,10 @@ async def run_add_subscription(
 ) -> AsyncIterator[Any]:
     try:
         ani = await build_from_request(plugin, request)
+        duplicate = await find_enabled_duplicate_subscription(plugin, ani)
+        if duplicate:
+            yield await _duplicate_reply(plugin, event, request, duplicate)
+            return
         body = "\n".join(
             [
                 "待确认 ANI-RSS 订阅:",
@@ -79,6 +87,10 @@ async def continue_confirm_add(
         yield reply(event, request, f"任务 {task_id} 缺少订阅内容，无法添加。")
         return
     try:
+        duplicate = await find_enabled_duplicate_subscription(plugin, ani)
+        if duplicate:
+            yield await _duplicate_reply(plugin, event, request, duplicate)
+            return
         message = await plugin.client(require_api_key=True).add_ani(ani)
         invalidate = getattr(plugin, "invalidate_subscription_cache", None)
         if callable(invalidate):
@@ -101,3 +113,15 @@ async def run_preview_subscription(
         yield reply(event, request, format_preview(ani, preview, PREVIEW_ITEMS_LIMIT))
     except Exception as exc:
         yield reply(event, request, f"Preview failed: {exc}")
+
+
+async def _duplicate_reply(
+    plugin: Any,
+    event: AstrMessageEvent,
+    request: WorkflowRequest,
+    duplicate: dict[str, Any],
+) -> Any:
+    text = format_duplicate_subscription(duplicate)
+    if request.source == "tool":
+        return reply(event, request, text)
+    return await interactive_reply(plugin, event, request, text)

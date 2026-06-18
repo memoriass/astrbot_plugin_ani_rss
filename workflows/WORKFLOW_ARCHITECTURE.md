@@ -5,6 +5,9 @@
 ## 文件
 
 - `models.py`: workflow 定义、别名、确认/取消回复集合。
+- `branches.py`: AI 前置分流候选、上下文门禁、置信度和选择规则。
+- `natural_text.py`: 中文自然语言清洗、番名/RSS URL/季度/评分参数抽取。
+- `dispatch.py`: `ai_dispatch` 前置 workflow，把自然语言或不完整工具参数转入具体业务 workflow。
 - `parsing.py`: workflow request 解析统合入口。
 - `parsing_tool.py`: LLM tool 参数解析。
 - `parsing_command.py`: 显式命令和短任务命令解析。
@@ -17,6 +20,8 @@
 - `mikan_recommend.py`: Mikan 推荐候选流程。
 - `mikan_search.py`: Mikan 搜索和字幕组 RSS 查询。
 - `mikan_selection.py`: 番剧选择、字幕组选择和续跑自动添加。
+- `mikan_fetch.py`: Mikan 搜索和字幕组查询缓存适配。
+- `duplicates.py`: 写入 ANI-RSS 前的已启用订阅重复检查。
 - `continuation.py`: 挂起任务续跑分发。
 - `manage.py`: 订阅列表、单个刷新、全部刷新、连通性诊断。
 - `pending.py`: 挂起任务、任务 ID 匹配、引用消息解析、继续流程辅助。
@@ -26,6 +31,7 @@
 
 ## 用户可见流程
 
+- `ai_dispatch`: 自然语言前置分流，按上下文和置信度选择后续 workflow。
 - `add_mikan_subscription`: 搜索 Mikan，选择番剧和字幕组后添加。
 - `recommend_mikan_subscription`: 推荐候选番剧，选择番剧和字幕组后添加。
 - `search_mikan`: 搜索 Mikan 或查看字幕组 RSS。
@@ -37,8 +43,19 @@
 
 诊断流程：
 
-- `check_status`: 检查 ANI-RSS API 连通性。
+- `check_status`: 检查 ANI-RSS API 连通性，并输出 SQLite、挂起任务、缓存和渲染器状态。
 - `preview_subscription`: 只预览订阅结构，不写入。
+
+## AI 前置分流
+
+借鉴 Bilibili push 的受控分支思路，自然语言和泛化工具参数不会直接落到业务 handler，
+而是先进入 `ai_dispatch`：
+
+- `branches.py` 只负责生成候选分支和置信度，不执行 API 写入。
+- `dispatch.py` 只选择一个明确分支并转交给已注册 handler。
+- 低置信度或多个候选差距过小时会返回可选分支，避免误触发添加、刷新等真实操作。
+- 泛化的 Agent 参数，例如 `workflow=workflow` 或 `workflow=ai_dispatch`，会用 `text/query/target`
+  中的自然语言重新分流。
 
 ## 挂起任务 ID
 

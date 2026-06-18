@@ -227,6 +227,40 @@ class RuntimeSqliteStore:
         with self._connection() as conn:
             conn.execute("DELETE FROM cache_entries WHERE cache_key = ?", (cache_key,))
 
+    def stats(self) -> dict[str, Any]:
+        current = time.time()
+        with self._connection() as conn:
+            pending_count = conn.execute(
+                "SELECT COUNT(*) AS value FROM pending_tasks WHERE expires_at > ?",
+                (current,),
+            ).fetchone()["value"]
+            cache_count = conn.execute(
+                "SELECT COUNT(*) AS value FROM cache_entries WHERE expires_at > ?",
+                (current,),
+            ).fetchone()["value"]
+            cache_rows = conn.execute(
+                """
+                SELECT cache_key, expires_at
+                FROM cache_entries
+                WHERE expires_at > ?
+                ORDER BY expires_at ASC
+                LIMIT 8
+                """,
+                (current,),
+            ).fetchall()
+        return {
+            "db_path": str(self.db_path),
+            "pending_count": int(pending_count or 0),
+            "cache_count": int(cache_count or 0),
+            "cache_keys": [
+                {
+                    "key": str(row["cache_key"]),
+                    "ttl_seconds": max(int(float(row["expires_at"]) - current), 0),
+                }
+                for row in cache_rows
+            ],
+        }
+
 
 class RuntimeStorageMixin:
     def runtime_store(self) -> RuntimeSqliteStore:
@@ -240,6 +274,9 @@ class RuntimeStorageMixin:
 
     def runtime_db_path(self) -> Path:
         return self.runtime_store().db_path
+
+    def runtime_stats(self) -> dict[str, Any]:
+        return self.runtime_store().stats()
 
     def cleanup_runtime_store(self) -> None:
         expired = self.runtime_store().cleanup()

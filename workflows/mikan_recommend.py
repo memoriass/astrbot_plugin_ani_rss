@@ -13,6 +13,7 @@ from .mikan import (
     _rank_mikan_candidates,
     mikan_candidates,
 )
+from .mikan_fetch import fetch_mikan_search
 from .models import WorkflowRequest
 from .pending import pending_footer, store_pending_rendered_cards, store_pending_task
 from .runtime import interactive_reply, reply
@@ -59,7 +60,7 @@ async def run_recommend_mikan_subscription(
     payload = _mikan_season_payload(params)
 
     try:
-        data = await plugin.client(require_api_key=True).mikan_search(query, payload)
+        data = await fetch_mikan_search(plugin, query, payload)
         candidates = mikan_candidates(data)
         candidates = _rank_mikan_candidates(
             candidates,

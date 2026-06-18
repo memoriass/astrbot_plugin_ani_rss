@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import AsyncIterator
+import importlib.util
 from typing import Any
 
 from astrbot.api.event import AstrMessageEvent
@@ -78,7 +79,49 @@ async def run_check_status(
         version = ""
         if isinstance(about.get("data"), dict):
             version = str(about["data"].get("version") or "")
-        suffix = f" version={version}" if version else ""
-        yield reply(event, request, f"ANI-RSS connection OK.{suffix}")
+        lines = ["ANI-RSS 连接正常"]
+        if version:
+            lines.append(f"服务版本: {version}")
+        lines.extend(_runtime_status_lines(plugin))
+        yield reply(event, request, "\n".join(lines))
     except Exception as exc:
-        yield reply(event, request, f"ANI-RSS connection failed: {exc}")
+        lines = [f"ANI-RSS 连接失败: {exc}"]
+        lines.extend(_runtime_status_lines(plugin))
+        yield reply(event, request, "\n".join(lines))
+
+
+def _runtime_status_lines(plugin: Any) -> list[str]:
+    lines: list[str] = []
+    stats_func = getattr(plugin, "runtime_stats", None)
+    if callable(stats_func):
+        try:
+            stats = stats_func()
+            lines.append(f"SQLite: {stats.get('db_path') or '(unknown)'}")
+            lines.append(f"挂起任务: {stats.get('pending_count', 0)}")
+            lines.append(f"缓存条目: {stats.get('cache_count', 0)}")
+            cache_keys = stats.get("cache_keys")
+            if isinstance(cache_keys, list) and cache_keys:
+                names = [
+                    f"{_short_cache_key(item.get('key'))}({item.get('ttl_seconds', 0)}s)"
+                    for item in cache_keys[:5]
+                    if isinstance(item, dict)
+                ]
+                if names:
+                    lines.append("缓存预览: " + "、".join(names))
+        except Exception as exc:
+            lines.append(f"本地存储状态读取失败: {exc}")
+
+    render_mode = getattr(plugin, "render_mode", lambda: "image")()
+    renderer = "可用" if importlib.util.find_spec("pylitehtml") else "不可用，自动回退文本"
+    lines.append(f"卡片发送模式: {render_mode}")
+    lines.append(f"pylitehtml: {renderer}")
+    return lines
+
+
+def _short_cache_key(value: Any) -> str:
+    text = str(value or "")
+    if text.startswith("ani_rss:"):
+        text = text.removeprefix("ani_rss:")
+    if len(text) <= 32:
+        return text
+    return text[:29] + "..."

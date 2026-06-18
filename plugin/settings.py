@@ -50,6 +50,12 @@ class PluginSettingsMixin:
         except (TypeError, ValueError):
             return 300
 
+    def mikan_search_cache_ttl_seconds(self) -> int:
+        try:
+            return max(int(self._cfg("mikan_search_cache_ttl_seconds", 3600)), 0)
+        except (TypeError, ValueError):
+            return 3600
+
     def storage_cleanup_interval_seconds(self) -> int:
         try:
             return max(int(self._cfg("storage_cleanup_interval_seconds", 600)), 60)

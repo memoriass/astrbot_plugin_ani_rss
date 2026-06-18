@@ -8,6 +8,7 @@ from typing import Any
 
 from astrbot.api import logger
 
+from .mikan_fetch import fetch_mikan_search
 from .utils import _first_text, _normalize_season, _score_value
 
 def mikan_candidates(data: dict[str, Any]) -> list[dict[str, Any]]:
@@ -29,7 +30,7 @@ async def _enrich_mikan_candidate(plugin: Any, candidate: dict[str, Any]) -> dic
     if not mikan_id:
         return candidate
     try:
-        data = await plugin.client(require_api_key=True).mikan_search(f"bangumiId: {mikan_id}")
+        data = await fetch_mikan_search(plugin, f"bangumiId: {mikan_id}")
         details = mikan_candidates(data)
     except Exception:
         return candidate

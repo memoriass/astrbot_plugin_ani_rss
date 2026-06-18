@@ -7,6 +7,7 @@ from astrbot.api.event import AstrMessageEvent
 
 from .formatting import format_mikan_candidates, format_mikan_groups
 from .mikan import _enrich_mikan_candidates_for_card, mikan_candidates
+from .mikan_fetch import fetch_mikan_groups, fetch_mikan_search
 from .models import WorkflowRequest
 from .pending import pending_footer, store_pending_rendered_cards, store_pending_task
 from .runtime import interactive_reply, reply
@@ -28,7 +29,7 @@ async def run_search_mikan(
     )
     try:
         if _looks_like_mikan_url(mikan_url):
-            groups = await plugin.client(require_api_key=True).mikan_groups(mikan_url)
+            groups = await fetch_mikan_groups(plugin, mikan_url)
             if not groups:
                 yield reply(event, request, "未找到 Mikan 字幕组。")
                 return
@@ -60,7 +61,7 @@ async def run_search_mikan(
         if not query:
             yield reply(event, request, "search_mikan 需要 query 或 mikan_url。")
             return
-        data = await plugin.client(require_api_key=True).mikan_search(query)
+        data = await fetch_mikan_search(plugin, query)
         candidates = mikan_candidates(data)
         if not candidates:
             yield reply(event, request, "未搜索到 Mikan 番剧。")

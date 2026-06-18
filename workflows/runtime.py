@@ -12,7 +12,7 @@ from .utils import _first_text, _get_optional_bool
 
 
 async def silent_connection_preflight(plugin: Any, workflow: str) -> str:
-    if workflow in {"check_status", "continue_pending"}:
+    if workflow in {"ai_dispatch", "check_status", "continue_pending"}:
         return ""
     try:
         await plugin.client().ping()

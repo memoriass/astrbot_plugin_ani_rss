@@ -7,9 +7,11 @@ AstrBot 的 ANI-RSS 订阅助手插件。
 ## 主要能力
 
 - 自然语言添加番剧订阅。
+- 自然语言会先按上下文和置信度分流到受控 workflow。
 - 搜索 Mikan 番剧和字幕组 RSS。
 - 推荐本季或指定条件的 Mikan 候选。
 - 选定 Mikan 字幕组后自动添加到 ANI-RSS。
+- 写入前检查已启用订阅，避免重复添加同一 RSS 或同一 Bangumi/字幕组。
 - RSS 直连添加会先生成确认卡片。
 - 支持查看已启用订阅、刷新单个订阅、刷新全部订阅。
 - 已启用订阅列表默认展示前 20 条，并按 ANI-RSS 星期分组。
@@ -24,6 +26,7 @@ AstrBot 的 ANI-RSS 订阅助手插件。
 - `interaction_timeout_seconds`: 用户选择/确认等待时间。
 - `pending_task_ttl_seconds`: 挂起任务保留时间。
 - `subscription_cache_ttl_seconds`: 订阅列表缓存时间，添加成功后会自动失效。
+- `mikan_search_cache_ttl_seconds`: Mikan 搜索、番剧详情和字幕组缓存时间。
 - `storage_cleanup_interval_seconds`: 过期挂起任务和缓存的清理间隔。
 - `render_mode`: 卡片发送模式，支持 `image` / `text` / `both`。
 

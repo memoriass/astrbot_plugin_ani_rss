@@ -6,6 +6,7 @@ from typing import Any, Callable
 from astrbot.api.event import AstrMessageEvent
 
 from .continuation import run_continue_pending
+from .dispatch import run_ai_dispatch
 from .formatting import format_workflow_list
 from .manage import (
     run_check_status,
@@ -48,6 +49,11 @@ async def run_ani_rss_workflow(
     spec = COMPILED_WORKFLOWS.get(request.workflow)
     if spec is None:
         yield reply(event, request, "未知 ANI-RSS workflow。\n" + format_workflow_list())
+        return
+
+    if request.workflow == "ai_dispatch":
+        async for item in run_ai_dispatch(plugin, event, request, WORKFLOW_HANDLERS):
+            yield item
         return
 
     preflight_error = await silent_connection_preflight(plugin, request.workflow)

@@ -41,6 +41,12 @@
         "description": "查看订阅列表时复用 ANI-RSS listAni 结果的时间。添加订阅成功会自动失效缓存；设为 0 可关闭。",
         "default": 300
     },
+    "mikan_search_cache_ttl_seconds": {
+        "title": "Mikan 搜索缓存（秒）",
+        "type": "int",
+        "description": "Mikan 搜索、番剧详情和字幕组列表的短期缓存时间，用于降低重复自然语言查询时的延迟；设为 0 可关闭。",
+        "default": 3600
+    },
     "storage_cleanup_interval_seconds": {
         "title": "存储清理间隔（秒）",
         "type": "int",

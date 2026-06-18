@@ -30,7 +30,11 @@ class SubscriptionBuilderMixin:
         if not bangumi_id:
             return ""
         try:
-            data = await self.client(require_api_key=True).mikan_search(f"bangumiId: {bangumi_id}")
+            cached = getattr(self, "cached_mikan_search", None)
+            if callable(cached):
+                data = await cached(f"bangumiId: {bangumi_id}")
+            else:
+                data = await self.client(require_api_key=True).mikan_search(f"bangumiId: {bangumi_id}")
         except Exception:
             return ""
         for section in data.get("weeks") or data.get("items") or []:

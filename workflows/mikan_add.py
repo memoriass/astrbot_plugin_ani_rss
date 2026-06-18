@@ -13,6 +13,7 @@ from .mikan import (
     _enrich_mikan_candidates_for_card,
     mikan_candidates,
 )
+from .mikan_fetch import fetch_mikan_search
 from .mikan_selection import select_mikan_group
 from .models import WorkflowRequest
 from .pending import pending_footer, store_pending_rendered_cards, store_pending_task
@@ -72,7 +73,7 @@ async def run_mikan_add_steps(
                 "name",
                 "target",
             )
-            data = await plugin.client(require_api_key=True).mikan_search(query)
+            data = await fetch_mikan_search(plugin, query)
             candidates = mikan_candidates(data)
             if not candidates:
                 yield reply(event, request, f"未搜索到 Mikan 番剧：{query}")
