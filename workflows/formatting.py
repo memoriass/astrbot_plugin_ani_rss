@@ -202,8 +202,9 @@ def format_mikan_groups(groups: list[dict[str, Any]], limit: int = 10) -> str:
             first = str(items[0].get("title") or item_name(items[0]) or "")[:80]
         tags = ", ".join(str(v) for v in group.get("tags") or [])
         suffix = f" tags={tags}" if tags else ""
+        preference = " 偏好" if group.get("_preference_score") else ""
         item_count = len(items) if isinstance(items, list) else 0
-        lines.append(f"{index}. {label} {update_day} items={item_count}{suffix}")
+        lines.append(f"{index}. {label} {update_day} items={item_count}{suffix}{preference}")
         if first:
             lines.append(f"   sample: {first}")
         if rss:

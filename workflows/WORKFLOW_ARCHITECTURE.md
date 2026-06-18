@@ -59,6 +59,15 @@
 - `search_mikan` 作为 AI tool 内部检索时默认只返回文本，不创建挂起任务也不主动渲染卡片；
   传 `interactive=true` 或从自然语言/命令入口进入时才展示候选卡片。
 
+## 偏好学习
+
+字幕组和语言是强结构化偏好，当前使用 SQLite 计数和近因数据，不引入向量库：
+
+- 成功添加 Mikan 字幕组后记录当前会话的字幕组 label 和语言标签。
+- `preference_mode=rank` 时只重排字幕组候选，不跳过用户选择。
+- `preference_mode=auto` 时，只有同一字幕组达到 `preference_min_uses` 且领先候选足够明确，才会自动选择并添加。
+- 偏好数据随运行时 SQLite 存储，过旧数据会在清理任务中回收。
+
 ## 挂起任务 ID
 
 任务 ID 使用 `ani` + 8 位 hex，例如 `anif237a38d`。

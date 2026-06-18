@@ -16,6 +16,7 @@ from .mikan_fetch import fetch_mikan_groups
 from .models import WorkflowRequest
 from .pending import (
     cleanup_task_cards,
+    event_origin,
     extract_choice_index,
     pending_footer,
     store_pending_rendered_cards,
@@ -47,6 +48,18 @@ async def select_mikan_group(
     groups = [group for group in groups if str(group.get("rss") or "").strip()]
     if not groups:
         yield reply(event, request, "该 Mikan 番剧没有找到可用字幕组 RSS。")
+        return
+    groups = _rank_groups(plugin, event, groups)
+    auto_group = _auto_select_group(plugin, event, groups)
+    if auto_group:
+        async for item in add_mikan_group_subscription(
+            plugin,
+            event,
+            request,
+            candidate=candidate or {},
+            group=auto_group,
+        ):
+            yield item
         return
 
     shown_groups = groups[:8]
@@ -137,6 +150,30 @@ async def continue_select_mikan_group(
 
     resumed_request = request_from_task(task, request.source)
     candidate = task.get("candidate") if isinstance(task.get("candidate"), dict) else {}
+    async for item in add_mikan_group_subscription(
+        plugin,
+        event,
+        resumed_request,
+        candidate=candidate,
+        group=group,
+    ):
+        yield item
+
+
+async def add_mikan_group_subscription(
+    plugin: Any,
+    event: AstrMessageEvent,
+    request: WorkflowRequest,
+    *,
+    candidate: dict[str, Any],
+    group: dict[str, Any],
+) -> AsyncIterator[Any]:
+    rss_url = str(group.get("rss") or "")
+    if not rss_url:
+        yield reply(event, request, "所选字幕组没有 RSS 地址，无法添加。")
+        return
+
+    resumed_request = request
     resumed_request.target = rss_url
     resumed_request.params["rss_type"] = "mikan"
     resumed_request.params.setdefault("subgroup", str(group.get("label") or ""))
@@ -157,8 +194,54 @@ async def continue_select_mikan_group(
         invalidate = getattr(plugin, "invalidate_subscription_cache", None)
         if callable(invalidate):
             invalidate()
+        _record_group_preference(plugin, event, group)
         ani["_message"] = message
         yield await interactive_reply(plugin, event, request, format_added(ani))
     except Exception as exc:
         logger.exception("Unexpected Mikan pending auto add failure")
         yield reply(event, request, f"添加订阅失败: {exc}")
+
+
+def _rank_groups(
+    plugin: Any,
+    event: AstrMessageEvent,
+    groups: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    ranker = getattr(plugin, "rank_mikan_groups_by_preferences", None)
+    if not callable(ranker):
+        return groups
+    try:
+        return ranker(event_origin(event), groups)
+    except Exception as exc:
+        logger.debug("Failed to rank Mikan groups by preferences: %s", exc)
+        return groups
+
+
+def _auto_select_group(
+    plugin: Any,
+    event: AstrMessageEvent,
+    groups: list[dict[str, Any]],
+) -> dict[str, Any] | None:
+    selector = getattr(plugin, "should_auto_select_mikan_group", None)
+    if not callable(selector):
+        return None
+    try:
+        selected = selector(event_origin(event), groups)
+    except Exception as exc:
+        logger.debug("Failed to auto select Mikan group by preferences: %s", exc)
+        return None
+    return selected if isinstance(selected, dict) else None
+
+
+def _record_group_preference(
+    plugin: Any,
+    event: AstrMessageEvent,
+    group: dict[str, Any],
+) -> None:
+    recorder = getattr(plugin, "record_mikan_group_preference", None)
+    if not callable(recorder):
+        return
+    try:
+        recorder(event_origin(event), group)
+    except Exception as exc:
+        logger.debug("Failed to record Mikan group preference: %s", exc)

@@ -13,6 +13,8 @@ from astrbot.api import logger
 
 from .storage_paths import PLUGIN_NAME, plugin_data_dir
 
+PREFERENCE_RETENTION_SECONDS = 180 * 24 * 60 * 60
+
 
 class RuntimeSqliteStore:
     def __init__(self, db_path: Path) -> None:
@@ -49,6 +51,22 @@ class RuntimeSqliteStore:
                 );
                 CREATE INDEX IF NOT EXISTS idx_cache_entries_expires_at
                     ON cache_entries(expires_at);
+
+                CREATE TABLE IF NOT EXISTS preference_entries (
+                    origin TEXT NOT NULL DEFAULT '',
+                    scope TEXT NOT NULL DEFAULT '',
+                    key TEXT NOT NULL DEFAULT '',
+                    value TEXT NOT NULL DEFAULT '',
+                    count INTEGER NOT NULL DEFAULT 0,
+                    created_at REAL NOT NULL,
+                    updated_at REAL NOT NULL,
+                    payload_json TEXT NOT NULL DEFAULT '{}',
+                    PRIMARY KEY (origin, scope, key, value)
+                );
+                CREATE INDEX IF NOT EXISTS idx_preference_entries_origin_scope
+                    ON preference_entries(origin, scope);
+                CREATE INDEX IF NOT EXISTS idx_preference_entries_updated_at
+                    ON preference_entries(updated_at);
                 """,
             )
 
@@ -77,6 +95,10 @@ class RuntimeSqliteStore:
             expired = [task for row in rows if (task := _loads_dict(row["payload_json"]))]
             conn.execute("DELETE FROM pending_tasks WHERE expires_at <= ?", (current,))
             conn.execute("DELETE FROM cache_entries WHERE expires_at <= ?", (current,))
+            conn.execute(
+                "DELETE FROM preference_entries WHERE updated_at <= ?",
+                (current - PREFERENCE_RETENTION_SECONDS,),
+            )
         return expired
 
     def pending_exists(self, task_id: str) -> bool:
@@ -227,6 +249,73 @@ class RuntimeSqliteStore:
         with self._connection() as conn:
             conn.execute("DELETE FROM cache_entries WHERE cache_key = ?", (cache_key,))
 
+    def record_preference(
+        self,
+        *,
+        origin: str,
+        scope: str,
+        key: str,
+        value: str,
+        payload: dict[str, Any] | None = None,
+    ) -> None:
+        clean_value = str(value or "").strip()
+        if not clean_value:
+            return
+        now = time.time()
+        with self._connection() as conn:
+            conn.execute(
+                """
+                INSERT INTO preference_entries
+                    (origin, scope, key, value, count, created_at, updated_at, payload_json)
+                VALUES (?, ?, ?, ?, 1, ?, ?, ?)
+                ON CONFLICT(origin, scope, key, value) DO UPDATE SET
+                    count = count + 1,
+                    updated_at = excluded.updated_at,
+                    payload_json = excluded.payload_json
+                """,
+                (
+                    str(origin or ""),
+                    str(scope or ""),
+                    str(key or ""),
+                    clean_value,
+                    now,
+                    now,
+                    _dumps(payload or {}),
+                ),
+            )
+
+    def list_preferences(
+        self,
+        *,
+        origin: str,
+        scope: str,
+        limit: int = 100,
+    ) -> list[dict[str, Any]]:
+        with self._connection() as conn:
+            rows = conn.execute(
+                """
+                SELECT origin, scope, key, value, count, created_at, updated_at, payload_json
+                FROM preference_entries
+                WHERE scope = ? AND (origin = ? OR origin = '')
+                ORDER BY count DESC, updated_at DESC
+                LIMIT ?
+                """,
+                (str(scope or ""), str(origin or ""), max(int(limit), 1)),
+            ).fetchall()
+        return [
+            {
+                "origin": str(row["origin"] or ""),
+                "scope": str(row["scope"] or ""),
+                "key": str(row["key"] or ""),
+                "value": str(row["value"] or ""),
+                "count": int(row["count"] or 0),
+                "created_at": float(row["created_at"] or 0),
+                "updated_at": float(row["updated_at"] or 0),
+                "payload": _loads_dict(row["payload_json"]) or {},
+            }
+            for row in rows
+        ]
+
     def stats(self) -> dict[str, Any]:
         current = time.time()
         with self._connection() as conn:
@@ -248,10 +337,14 @@ class RuntimeSqliteStore:
                 """,
                 (current,),
             ).fetchall()
+            preference_count = conn.execute(
+                "SELECT COUNT(*) AS value FROM preference_entries",
+            ).fetchone()["value"]
         return {
             "db_path": str(self.db_path),
             "pending_count": int(pending_count or 0),
             "cache_count": int(cache_count or 0),
+            "preference_count": int(preference_count or 0),
             "cache_keys": [
                 {
                     "key": str(row["cache_key"]),

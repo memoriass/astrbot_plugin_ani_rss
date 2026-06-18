@@ -47,6 +47,23 @@
         "description": "Mikan 搜索、番剧详情和字幕组列表的短期缓存时间，用于降低重复自然语言查询时的延迟；设为 0 可关闭。",
         "default": 3600
     },
+    "preference_mode": {
+        "title": "偏好学习模式",
+        "type": "string",
+        "description": "根据用户实际选择学习常用字幕组和语言。off 关闭；rank 仅把常用项排前；auto 在常用字幕组足够明确时自动选择并添加。",
+        "default": "rank",
+        "options": [
+            "off",
+            "rank",
+            "auto"
+        ]
+    },
+    "preference_min_uses": {
+        "title": "自动选择最少使用次数",
+        "type": "int",
+        "description": "偏好学习模式为 auto 时，同一字幕组至少被选中过多少次才允许自动选择；rank 模式不使用该阈值。",
+        "default": 3
+    },
     "storage_cleanup_interval_seconds": {
         "title": "存储清理间隔（秒）",
         "type": "int",

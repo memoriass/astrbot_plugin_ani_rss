@@ -9,6 +9,7 @@ from astrbot.core.star.filter.command import GreedyStr
 
 from .plugin.cache_store import PluginCacheMixin
 from .plugin.pending_store import PendingTaskStoreMixin
+from .plugin.preferences import PluginPreferenceMixin
 from .plugin.settings import PluginSettingsMixin
 from .plugin.subscription_builder import SubscriptionBuilderMixin
 from .plugin.tooling import (
@@ -36,13 +37,14 @@ from .workflows import (
     "astrbot_plugin_ani_rss",
     "memoriass",
     "ANI-RSS 订阅管理插件，支持 Agent 通过 workflow 搜索并交互式添加订阅。",
-    "1.0.9",
+    "1.1.0",
     "https://github.com/memoriass/astrbot_plugin_ani_rss",
 )
 class AniRssPlugin(
     PluginSettingsMixin,
     PendingTaskStoreMixin,
     PluginCacheMixin,
+    PluginPreferenceMixin,
     SubscriptionBuilderMixin,
     Star,
 ):
