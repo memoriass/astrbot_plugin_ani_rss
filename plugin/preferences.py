@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import math
 import re
+import time
 from typing import Any
 
 from .sqlite_store import RuntimeStorageMixin
@@ -34,6 +35,27 @@ class PluginPreferenceMixin(RuntimeStorageMixin):
             )
         for language in _language_values(group):
             self.runtime_store().record_preference(
+                origin=origin,
+                scope=PREFERENCE_SCOPE_MIKAN_GROUP,
+                key="language",
+                value=language,
+                payload={"display": language},
+            )
+
+    def reject_mikan_group_preference(self, origin: str, group: dict[str, Any]) -> None:
+        if self.preference_mode() == "off":
+            return
+        label = _normalize_text(group.get("label"))
+        if label:
+            self.runtime_store().reject_preference(
+                origin=origin,
+                scope=PREFERENCE_SCOPE_MIKAN_GROUP,
+                key="label",
+                value=label,
+                payload={"display": str(group.get("label") or "")},
+            )
+        for language in _language_values(group):
+            self.runtime_store().reject_preference(
                 origin=origin,
                 scope=PREFERENCE_SCOPE_MIKAN_GROUP,
                 key="language",
@@ -86,9 +108,16 @@ class PluginPreferenceMixin(RuntimeStorageMixin):
             for item in preferences
             if item.get("key") == "label"
         }
+        label_rejections = {
+            str(item.get("value") or ""): int(item.get("rejected_count") or 0)
+            for item in preferences
+            if item.get("key") == "label"
+        }
         top = groups[0]
         top_label = _normalize_text(top.get("label"))
         if label_counts.get(top_label, 0) < self.preference_min_uses():
+            return None
+        if label_rejections.get(top_label, 0) >= label_counts.get(top_label, 0):
             return None
         runner = groups[1] if len(groups) > 1 else {}
         top_score = float(top.get("_preference_score") or 0)
@@ -100,13 +129,20 @@ class PluginPreferenceMixin(RuntimeStorageMixin):
 
 def _preference_score_map(preferences: list[dict[str, Any]], key: str) -> dict[str, float]:
     scores: dict[str, float] = {}
+    now = time.time()
     for item in preferences:
         if item.get("key") != key:
             continue
         value = str(item.get("value") or "")
         count = int(item.get("count") or 0)
-        if value and count > 0:
-            scores[value] = max(scores.get(value, 0.0), 1.0 + math.log(count))
+        rejected = int(item.get("rejected_count") or 0)
+        if value and (count > 0 or rejected > 0):
+            age_days = max((now - float(item.get("updated_at") or now)) / 86400, 0.0)
+            recency = 1.0 / (1.0 + age_days / 45.0)
+            positive = (1.0 + math.log(max(count, 1))) * recency if count > 0 else 0.0
+            penalty = math.log1p(rejected) * 1.20
+            score = max(positive - penalty, 0.0)
+            scores[value] = max(scores.get(value, 0.0), score)
     return scores
 
 

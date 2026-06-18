@@ -12,6 +12,7 @@ from .branches import (
 )
 from .models import WorkflowRequest
 from .runtime import reply, silent_connection_preflight
+from .tool_result_trace import run_with_tool_result_trace
 from .utils import _first_text
 
 
@@ -48,7 +49,7 @@ async def run_ai_dispatch(
         params=dict(selected.params),
         source=request.source,
     )
-    async for item in handler(plugin, event, next_request):
+    async for item in run_with_tool_result_trace(plugin, event, next_request, handler):
         yield item
 
 

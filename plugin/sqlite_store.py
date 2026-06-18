@@ -14,6 +14,7 @@ from astrbot.api import logger
 from .storage_paths import PLUGIN_NAME, plugin_data_dir
 
 PREFERENCE_RETENTION_SECONDS = 180 * 24 * 60 * 60
+TOOL_RESULT_RETENTION_SECONDS = 90 * 24 * 60 * 60
 
 
 class RuntimeSqliteStore:
@@ -58,6 +59,7 @@ class RuntimeSqliteStore:
                     key TEXT NOT NULL DEFAULT '',
                     value TEXT NOT NULL DEFAULT '',
                     count INTEGER NOT NULL DEFAULT 0,
+                    rejected_count INTEGER NOT NULL DEFAULT 0,
                     created_at REAL NOT NULL,
                     updated_at REAL NOT NULL,
                     payload_json TEXT NOT NULL DEFAULT '{}',
@@ -67,8 +69,23 @@ class RuntimeSqliteStore:
                     ON preference_entries(origin, scope);
                 CREATE INDEX IF NOT EXISTS idx_preference_entries_updated_at
                     ON preference_entries(updated_at);
+
+                CREATE TABLE IF NOT EXISTS tool_results (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    origin TEXT NOT NULL DEFAULT '',
+                    workflow TEXT NOT NULL DEFAULT '',
+                    target TEXT NOT NULL DEFAULT '',
+                    source TEXT NOT NULL DEFAULT '',
+                    success INTEGER NOT NULL DEFAULT 0,
+                    summary TEXT NOT NULL DEFAULT '',
+                    created_at REAL NOT NULL,
+                    payload_json TEXT NOT NULL DEFAULT '{}'
+                );
+                CREATE INDEX IF NOT EXISTS idx_tool_results_origin_workflow
+                    ON tool_results(origin, workflow, created_at DESC);
                 """,
             )
+            _ensure_column(conn, "preference_entries", "rejected_count", "INTEGER NOT NULL DEFAULT 0")
 
     @contextmanager
     def _connection(self):
@@ -98,6 +115,10 @@ class RuntimeSqliteStore:
             conn.execute(
                 "DELETE FROM preference_entries WHERE updated_at <= ?",
                 (current - PREFERENCE_RETENTION_SECONDS,),
+            )
+            conn.execute(
+                "DELETE FROM tool_results WHERE created_at <= ?",
+                (current - TOOL_RESULT_RETENTION_SECONDS,),
             )
         return expired
 
@@ -266,10 +287,45 @@ class RuntimeSqliteStore:
             conn.execute(
                 """
                 INSERT INTO preference_entries
-                    (origin, scope, key, value, count, created_at, updated_at, payload_json)
-                VALUES (?, ?, ?, ?, 1, ?, ?, ?)
+                    (origin, scope, key, value, count, rejected_count, created_at, updated_at, payload_json)
+                VALUES (?, ?, ?, ?, 1, 0, ?, ?, ?)
                 ON CONFLICT(origin, scope, key, value) DO UPDATE SET
                     count = count + 1,
+                    updated_at = excluded.updated_at,
+                    payload_json = excluded.payload_json
+                """,
+                (
+                    str(origin or ""),
+                    str(scope or ""),
+                    str(key or ""),
+                    clean_value,
+                    now,
+                    now,
+                    _dumps(payload or {}),
+                ),
+            )
+
+    def reject_preference(
+        self,
+        *,
+        origin: str,
+        scope: str,
+        key: str,
+        value: str,
+        payload: dict[str, Any] | None = None,
+    ) -> None:
+        clean_value = str(value or "").strip()
+        if not clean_value:
+            return
+        now = time.time()
+        with self._connection() as conn:
+            conn.execute(
+                """
+                INSERT INTO preference_entries
+                    (origin, scope, key, value, count, rejected_count, created_at, updated_at, payload_json)
+                VALUES (?, ?, ?, ?, 0, 1, ?, ?, ?)
+                ON CONFLICT(origin, scope, key, value) DO UPDATE SET
+                    rejected_count = rejected_count + 1,
                     updated_at = excluded.updated_at,
                     payload_json = excluded.payload_json
                 """,
@@ -294,10 +350,10 @@ class RuntimeSqliteStore:
         with self._connection() as conn:
             rows = conn.execute(
                 """
-                SELECT origin, scope, key, value, count, created_at, updated_at, payload_json
+                SELECT origin, scope, key, value, count, rejected_count, created_at, updated_at, payload_json
                 FROM preference_entries
                 WHERE scope = ? AND (origin = ? OR origin = '')
-                ORDER BY count DESC, updated_at DESC
+                ORDER BY count DESC, rejected_count ASC, updated_at DESC
                 LIMIT ?
                 """,
                 (str(scope or ""), str(origin or ""), max(int(limit), 1)),
@@ -309,12 +365,43 @@ class RuntimeSqliteStore:
                 "key": str(row["key"] or ""),
                 "value": str(row["value"] or ""),
                 "count": int(row["count"] or 0),
+                "rejected_count": int(row["rejected_count"] or 0),
                 "created_at": float(row["created_at"] or 0),
                 "updated_at": float(row["updated_at"] or 0),
                 "payload": _loads_dict(row["payload_json"]) or {},
             }
             for row in rows
         ]
+
+    def record_tool_result(
+        self,
+        *,
+        origin: str,
+        workflow: str,
+        target: str,
+        source: str,
+        success: bool,
+        summary: str,
+        payload: dict[str, Any] | None = None,
+    ) -> None:
+        with self._connection() as conn:
+            conn.execute(
+                """
+                INSERT INTO tool_results
+                    (origin, workflow, target, source, success, summary, created_at, payload_json)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    str(origin or ""),
+                    str(workflow or "")[:80],
+                    str(target or "")[:240],
+                    str(source or "")[:40],
+                    1 if success else 0,
+                    str(summary or "")[:800],
+                    time.time(),
+                    _dumps(payload or {}),
+                ),
+            )
 
     def stats(self) -> dict[str, Any]:
         current = time.time()
@@ -340,11 +427,15 @@ class RuntimeSqliteStore:
             preference_count = conn.execute(
                 "SELECT COUNT(*) AS value FROM preference_entries",
             ).fetchone()["value"]
+            tool_result_count = conn.execute(
+                "SELECT COUNT(*) AS value FROM tool_results",
+            ).fetchone()["value"]
         return {
             "db_path": str(self.db_path),
             "pending_count": int(pending_count or 0),
             "cache_count": int(cache_count or 0),
             "preference_count": int(preference_count or 0),
+            "tool_result_count": int(tool_result_count or 0),
             "cache_keys": [
                 {
                     "key": str(row["cache_key"]),
@@ -421,3 +512,10 @@ def _loads(raw: str) -> Any | None:
 def _loads_dict(raw: str) -> dict[str, Any] | None:
     value = _loads(raw)
     return value if isinstance(value, dict) else None
+
+
+def _ensure_column(conn: sqlite3.Connection, table: str, column: str, ddl: str) -> None:
+    rows = conn.execute(f"PRAGMA table_info({table})").fetchall()
+    existing = {str(row["name"]) for row in rows}
+    if column not in existing:
+        conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {ddl}")

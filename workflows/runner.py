@@ -22,6 +22,7 @@ from .mikan_flow import (
 from .models import COMPILED_WORKFLOWS, WorkflowRequest
 from .rss import run_add_subscription, run_preview_subscription
 from .runtime import reply, silent_connection_preflight
+from .tool_result_trace import run_with_tool_result_trace
 from .utils import _normalize_workflow
 
 WorkflowHandler = Callable[[Any, AstrMessageEvent, WorkflowRequest], AsyncIterator[Any]]
@@ -70,5 +71,5 @@ async def run_ani_rss_workflow(
         yield reply(event, request, "workflow 已注册但尚未实现，请检查插件版本。")
         return
 
-    async for item in handler(plugin, event, request):
+    async for item in run_with_tool_result_trace(plugin, event, request, handler):
         yield item

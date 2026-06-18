@@ -12,6 +12,7 @@ from .plugin.pending_store import PendingTaskStoreMixin
 from .plugin.preferences import PluginPreferenceMixin
 from .plugin.settings import PluginSettingsMixin
 from .plugin.subscription_builder import SubscriptionBuilderMixin
+from .plugin.tool_results import PluginToolResultMixin
 from .plugin.tooling import (
     apply_tool_prompt_flags,
     help_text,
@@ -37,7 +38,7 @@ from .workflows import (
     "astrbot_plugin_ani_rss",
     "memoriass",
     "ANI-RSS 订阅管理插件，支持 Agent 通过 workflow 搜索并交互式添加订阅。",
-    "1.1.0",
+    "1.1.1",
     "https://github.com/memoriass/astrbot_plugin_ani_rss",
 )
 class AniRssPlugin(
@@ -46,6 +47,7 @@ class AniRssPlugin(
     PluginCacheMixin,
     PluginPreferenceMixin,
     SubscriptionBuilderMixin,
+    PluginToolResultMixin,
     Star,
 ):
     def __init__(self, context: Context, config: AstrBotConfig | None = None) -> None:

@@ -142,6 +142,7 @@ async def continue_select_mikan_group(
 
     popped = plugin.pop_pending_task(task_id)
     cleanup_task_cards(popped)
+    _record_group_rejections(plugin, event, groups[:selected])
     group = groups[selected]
     rss_url = str(group.get("rss") or "")
     if not rss_url:
@@ -245,3 +246,21 @@ def _record_group_preference(
         recorder(event_origin(event), group)
     except Exception as exc:
         logger.debug("Failed to record Mikan group preference: %s", exc)
+
+
+def _record_group_rejections(
+    plugin: Any,
+    event: AstrMessageEvent,
+    groups: list[dict[str, Any]],
+) -> None:
+    rejecter = getattr(plugin, "reject_mikan_group_preference", None)
+    if not callable(rejecter):
+        return
+    origin = event_origin(event)
+    for group in groups:
+        if not group.get("_preference_score"):
+            continue
+        try:
+            rejecter(origin, group)
+        except Exception as exc:
+            logger.debug("Failed to reject Mikan group preference: %s", exc)

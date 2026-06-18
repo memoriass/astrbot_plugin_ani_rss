@@ -100,6 +100,7 @@ def _runtime_status_lines(plugin: Any) -> list[str]:
             lines.append(f"挂起任务: {stats.get('pending_count', 0)}")
             lines.append(f"缓存条目: {stats.get('cache_count', 0)}")
             lines.append(f"偏好条目: {stats.get('preference_count', 0)}")
+            lines.append(f"工具结果: {stats.get('tool_result_count', 0)}")
             cache_keys = stats.get("cache_keys")
             if isinstance(cache_keys, list) and cache_keys:
                 names = [
