@@ -19,11 +19,12 @@ from .pending import (
     event_origin,
     extract_choice_index,
     pending_footer,
+    pending_tool_summary,
     store_pending_rendered_cards,
     request_from_task,
     store_pending_task,
 )
-from .runtime import build_from_request, interactive_reply, reply
+from .runtime import build_from_request, foreground_interaction_enabled, interactive_reply, reply
 
 
 async def select_mikan_group(
@@ -75,12 +76,19 @@ async def select_mikan_group(
         },
         task_id=task_id,
     )
+    body = format_mikan_groups(shown_groups, limit=8)
+    if not foreground_interaction_enabled(request):
+        yield reply(
+            event,
+            request,
+            body + pending_tool_summary(plugin, event, task_id, "选 1"),
+        )
+        return
     result = await interactive_reply(
         plugin,
         event,
         request,
-        format_mikan_groups(shown_groups, limit=8)
-        + pending_footer(plugin, event, task_id, "选 1"),
+        body + pending_footer(plugin, event, task_id, "选 1"),
     )
     store_pending_rendered_cards(plugin, task_id, request)
     yield result
@@ -197,7 +205,11 @@ async def add_mikan_group_subscription(
             invalidate()
         _record_group_preference(plugin, event, group)
         ani["_message"] = message
-        yield await interactive_reply(plugin, event, request, format_added(ani))
+        text = format_added(ani)
+        if foreground_interaction_enabled(request):
+            yield await interactive_reply(plugin, event, request, text)
+        else:
+            yield reply(event, request, text)
     except Exception as exc:
         logger.exception("Unexpected Mikan pending auto add failure")
         yield reply(event, request, f"添加订阅失败: {exc}")

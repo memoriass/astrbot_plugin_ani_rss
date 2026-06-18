@@ -230,13 +230,11 @@ def format_dispatch_options(branches: list[DispatchBranch]) -> str:
             "没有识别到明确的 ANI-RSS 操作。请说明要搜索番剧、推荐新番、"
             "添加订阅、查看订阅列表、刷新订阅还是检查状态。"
         )
-    lines = ["识别到多个可能的 ANI-RSS 操作，请补充要执行哪一个："]
-    for branch in branches[:5]:
-        target = f" | 目标: {branch.target}" if branch.target else ""
-        confirm = " | 需要用户继续选择或确认" if branch.requires_confirmation else ""
-        lines.append(
-            f"- {branch.branch_id}: {branch.title}{target}{confirm} | 置信度 {branch.confidence:.0%}",
-        )
+    lines = ["需要补充要执行的 ANI-RSS 操作："]
+    for branch in branches[:3]:
+        target = f"：{branch.target}" if branch.target else ""
+        confirm = "，需选择/确认" if branch.requires_confirmation else ""
+        lines.append(f"- {branch.title}{target}{confirm}")
     return "\n".join(lines)
 
 

@@ -8,7 +8,7 @@ from astrbot.api.event import AstrMessageEvent
 from ..integrations.ani_rss import AniRssError
 from ..ui.rendering import result_for_interaction
 from .models import WorkflowRequest
-from .utils import _first_text, _get_optional_bool
+from .utils import _first_text, _get_bool, _get_optional_bool
 
 
 async def silent_connection_preflight(plugin: Any, workflow: str) -> str:
@@ -40,6 +40,10 @@ async def interactive_reply(
     if path:
         request.rendered_cards.append(path)
     return result
+
+
+def foreground_interaction_enabled(request: WorkflowRequest) -> bool:
+    return request.source != "tool" or _get_bool(request.params, "interactive", default=False)
 
 
 async def build_from_request(plugin: Any, request: WorkflowRequest) -> dict[str, Any]:

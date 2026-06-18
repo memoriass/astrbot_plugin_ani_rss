@@ -15,8 +15,13 @@ from .mikan import (
 )
 from .mikan_fetch import fetch_mikan_search
 from .models import WorkflowRequest
-from .pending import pending_footer, store_pending_rendered_cards, store_pending_task
-from .runtime import interactive_reply, reply
+from .pending import (
+    pending_footer,
+    pending_tool_summary,
+    store_pending_rendered_cards,
+    store_pending_task,
+)
+from .runtime import foreground_interaction_enabled, interactive_reply, reply
 from .utils import _first_text, _get_bool, _get_float, _get_int
 
 DEFAULT_RECOMMEND_LIMIT = 8
@@ -95,6 +100,13 @@ async def run_recommend_mikan_subscription(
             kind="select_mikan_anime",
             payload={"candidates": shown},
         )
+        if not foreground_interaction_enabled(request):
+            yield reply(
+                event,
+                request,
+                body + pending_tool_summary(plugin, event, task_id, "选 1"),
+            )
+            return
         result = await interactive_reply(
             plugin,
             event,

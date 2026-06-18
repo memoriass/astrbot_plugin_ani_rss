@@ -114,11 +114,17 @@ def command_example(plugin: Any, event: AstrMessageEvent, command: str) -> str:
 def pending_footer(plugin: Any, event: AstrMessageEvent, task_id: str, action: str) -> str:
     short_id = task_id.removeprefix("ani")[-4:]
     example = command_example(plugin, event, f"ani{short_id} {action}")
+    return f"\n\n继续：引用回复“{action}”或发送 `{example}`。任务ID: {task_id}"
+
+
+def pending_tool_summary(plugin: Any, event: AstrMessageEvent, task_id: str, action: str) -> str:
+    short_id = task_id.removeprefix("ani")[-4:]
+    example = command_example(plugin, event, f"ani{short_id} {action}")
     return (
-        f"\n\n任务ID: {task_id}\n"
-        f"状态: 已挂起。引用本消息回复“{action}”，"
-        f"或发送 `{example}` 继续。"
-        "任务ID可用当前会话内不冲突的前几位或后几位。"
+        f"\n\n后台已挂起 task_id={task_id}。"
+        f"下一步需要用户选择/确认：{action}。"
+        f"如用户直接回复，可用 workflow=continue_pending、task_id={task_id}、choice/action=用户回复继续；"
+        f"显式命令示例：{example}。"
     )
 
 

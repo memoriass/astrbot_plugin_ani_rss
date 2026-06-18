@@ -16,10 +16,11 @@ from .models import CONFIRM_REPLIES, WorkflowRequest
 from .pending import (
     cleanup_task_cards,
     pending_footer,
+    pending_tool_summary,
     store_pending_rendered_cards,
     store_pending_task,
 )
-from .runtime import build_from_request, interactive_reply, reply
+from .runtime import build_from_request, foreground_interaction_enabled, interactive_reply, reply
 from .utils import normalize_reply
 
 PREVIEW_ITEMS_LIMIT = 8
@@ -58,6 +59,13 @@ async def run_add_subscription(
         kind="confirm_add",
         payload={"ani": ani},
     )
+    if not foreground_interaction_enabled(request):
+        yield reply(
+            event,
+            request,
+            body + pending_tool_summary(plugin, event, task_id, "确认"),
+        )
+        return
     result = await interactive_reply(
         plugin,
         event,
@@ -96,7 +104,11 @@ async def continue_confirm_add(
         if callable(invalidate):
             invalidate()
         ani["_message"] = message
-        yield await interactive_reply(plugin, event, request, format_added(ani))
+        text = format_added(ani)
+        if foreground_interaction_enabled(request):
+            yield await interactive_reply(plugin, event, request, text)
+        else:
+            yield reply(event, request, text)
     except Exception as exc:
         logger.exception("Unexpected ANI-RSS pending add failure")
         yield reply(event, request, f"添加订阅失败: {exc}")
