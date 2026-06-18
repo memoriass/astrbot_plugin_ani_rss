@@ -56,6 +56,8 @@
 - 低置信度或多个候选差距过小时会返回可选分支，避免误触发添加、刷新等真实操作。
 - 泛化的 Agent 参数，例如 `workflow=workflow` 或 `workflow=ai_dispatch`，会用 `text/query/target`
   中的自然语言重新分流。
+- `search_mikan` 作为 AI tool 内部检索时默认只返回文本，不创建挂起任务也不主动渲染卡片；
+  传 `interactive=true` 或从自然语言/命令入口进入时才展示候选卡片。
 
 ## 挂起任务 ID
 

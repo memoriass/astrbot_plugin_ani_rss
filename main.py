@@ -36,7 +36,7 @@ from .workflows import (
     "astrbot_plugin_ani_rss",
     "memoriass",
     "ANI-RSS 订阅管理插件，支持 Agent 通过 workflow 搜索并交互式添加订阅。",
-    "1.0.8",
+    "1.0.9",
     "https://github.com/memoriass/astrbot_plugin_ani_rss",
 )
 class AniRssPlugin(
@@ -78,7 +78,7 @@ class AniRssPlugin(
         - ai_dispatch：自然语言或不完整参数的前置分流入口。
         - recommend_mikan_subscription：推荐本季或指定条件的 Mikan 候选。
         - add_mikan_subscription：按番名搜索 Mikan，选择番剧和字幕组后添加。
-        - search_mikan：只搜索 Mikan 番剧或查看字幕组 RSS。
+        - search_mikan：只搜索 Mikan 番剧或查看字幕组 RSS；AI 内部检索默认不主动发卡。
         - list_subscriptions：查看 ANI-RSS 已启用订阅列表。
         - refresh_all / refresh_subscription：刷新全部或指定订阅。
         - continue_pending：用户引用候选卡并回复序号、确认或取消时继续任务。

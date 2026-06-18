@@ -11,7 +11,7 @@ from .mikan_fetch import fetch_mikan_groups, fetch_mikan_search
 from .models import WorkflowRequest
 from .pending import pending_footer, store_pending_rendered_cards, store_pending_task
 from .runtime import interactive_reply, reply
-from .utils import _first_text, _looks_like_mikan_url
+from .utils import _first_text, _get_bool, _looks_like_mikan_url
 
 
 async def run_search_mikan(
@@ -20,6 +20,12 @@ async def run_search_mikan(
     request: WorkflowRequest,
 ) -> AsyncIterator[Any]:
     params = request.params
+    render_interactive = request.source != "tool" or _get_bool(params, "interactive", default=False)
+    preview_only = (
+        _get_bool(params, "preview_only", default=False)
+        or _get_bool(params, "dry_run", default=False)
+        or not render_interactive
+    )
     mikan_url = _first_text(
         {"target": request.target, **params},
         "mikan_url",
@@ -35,6 +41,10 @@ async def run_search_mikan(
                 return
 
             shown_groups = groups[:8]
+            if preview_only:
+                yield reply(event, request, format_mikan_groups(shown_groups, limit=8))
+                return
+
             task_id, _task = store_pending_task(
                 plugin,
                 event,
@@ -68,6 +78,10 @@ async def run_search_mikan(
             return
 
         shown = await _enrich_mikan_candidates_for_card(plugin, candidates[:10])
+        if preview_only:
+            yield reply(event, request, format_mikan_candidates(shown, limit=10))
+            return
+
         task_id, _task = store_pending_task(
             plugin,
             event,

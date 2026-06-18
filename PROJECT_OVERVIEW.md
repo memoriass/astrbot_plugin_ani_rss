@@ -2,12 +2,13 @@
 
 AstrBot 的 ANI-RSS 订阅助手插件。插件提供 `ani_rss` Agent 工具，让用户用自然语言搜索 Mikan、选择字幕组，并把 RSS 订阅提交到 ANI-RSS。
 
-当前版本：`1.0.8`
+当前版本：`1.0.9`
 
 ## 能力
 
 - 自然语言添加番剧订阅，例如“帮我订阅躲在超市后门抽烟的两人”。
 - 自然语言和不完整 Agent 工具参数会先进入 `ai_dispatch`，按上下文和置信度分流到受控 workflow。
+- AI tool 调用纯 `search_mikan` 时默认只返回文本给模型，不主动生成用户卡片；需要卡片可传 `interactive=true`。
 - 支持 Mikan 搜索、季度推荐、番剧候选选择、字幕组选择。
 - Mikan 搜索、番剧详情和字幕组列表使用短期缓存，降低重复查询延迟。
 - Mikan 字幕组选定后直接调用 ANI-RSS API 添加订阅。
