@@ -85,7 +85,6 @@ class RuntimeSqliteStore:
                     ON tool_results(origin, workflow, created_at DESC);
                 """,
             )
-            _ensure_column(conn, "preference_entries", "rejected_count", "INTEGER NOT NULL DEFAULT 0")
 
     @contextmanager
     def _connection(self):
@@ -512,10 +511,3 @@ def _loads(raw: str) -> Any | None:
 def _loads_dict(raw: str) -> dict[str, Any] | None:
     value = _loads(raw)
     return value if isinstance(value, dict) else None
-
-
-def _ensure_column(conn: sqlite3.Connection, table: str, column: str, ddl: str) -> None:
-    rows = conn.execute(f"PRAGMA table_info({table})").fetchall()
-    existing = {str(row["name"]) for row in rows}
-    if column not in existing:
-        conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {ddl}")
